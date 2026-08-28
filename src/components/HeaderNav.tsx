@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   FileText, 
   Download, 
@@ -51,6 +51,18 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setTemplateDropdownOpen(false);
+        setExportDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
 
   const handleDocxExport = async () => {
     try {
@@ -138,7 +150,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         <div className="h-6 w-[1px] bg-slate-800 mx-1" />
 
         {/* Template Switcher Dropdown */}
-        <div className="relative">
+        <div className="relative z-50">
           <button
             onClick={() => setTemplateDropdownOpen(!templateDropdownOpen)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60 transition-colors"
