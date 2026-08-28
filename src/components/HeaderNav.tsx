@@ -51,6 +51,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -63,6 +65,24 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
+
+  useEffect(() => {
+    if (!templateDropdownOpen && !exportDropdownOpen) return;
+
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      const clickedInsideTemplate = templateDropdownRef.current?.contains(target);
+      const clickedInsideExport = exportDropdownRef.current?.contains(target);
+
+      if (!clickedInsideTemplate && !clickedInsideExport) {
+        setTemplateDropdownOpen(false);
+        setExportDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener('pointerdown', handleOutsidePointer);
+    return () => window.removeEventListener('pointerdown', handleOutsidePointer);
+  }, [templateDropdownOpen, exportDropdownOpen]);
 
   const handleDocxExport = async () => {
     try {
@@ -150,7 +170,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         <div className="h-6 w-[1px] bg-slate-800 mx-1" />
 
         {/* Template Switcher Dropdown */}
-        <div className="relative z-50">
+        <div ref={templateDropdownRef} className="relative z-50">
           <button
             onClick={() => setTemplateDropdownOpen(!templateDropdownOpen)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60 transition-colors"
@@ -312,7 +332,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         </button>
 
         {/* Secondary Actions Dropdown (JSON & Print) */}
-        <div className="relative">
+        <div ref={exportDropdownRef} className="relative">
           <button
             onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
