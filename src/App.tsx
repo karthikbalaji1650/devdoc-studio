@@ -105,6 +105,19 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleReorderSections = (draggedId: string, targetId: string) => {
+    setDocument(prev => {
+      const draggedIndex = prev.sections.findIndex(section => section.id === draggedId);
+      const targetIndex = prev.sections.findIndex(section => section.id === targetId);
+      if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return prev;
+
+      const newSections = [...prev.sections];
+      const [draggedSection] = newSections.splice(draggedIndex, 1);
+      newSections.splice(targetIndex, 0, draggedSection);
+      return { ...prev, sections: newSections };
+    });
+  };
+
   const handleAddSection = (level: 1 | 2 | 3, type: SectionType, title: string = 'New Section') => {
     const newId = `sec-${Date.now()}`;
     const newSection: DocSection = {
@@ -218,6 +231,7 @@ export const App: React.FC = () => {
             activeSectionId={activeSectionId}
             onSelectSection={setActiveSectionId}
             onAddSection={handleAddSection}
+            onReorderSections={handleReorderSections}
           />
         )}
 
