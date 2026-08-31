@@ -437,3 +437,4 @@ const UserProfileButton: React.FC = () => {
       )}
     </div>
   );
+};

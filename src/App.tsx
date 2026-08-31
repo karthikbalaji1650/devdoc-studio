@@ -473,3 +473,4 @@ export const App: React.FC = () => {
   }
 
   return <AppContent />;
+};
