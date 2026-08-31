@@ -23,6 +23,12 @@ export interface DocumentMetadata {
   logoUrl?: string; // Base64 data URI or image URL
   logoPosition?: 'left' | 'right';
   tags?: string[];
+  // Ownership & Permissions
+  ownerId: string; // User ID of the owner
+  ownerEmail: string;
+  createdAt: string;
+  lastModifiedBy?: string;
+  lastModifiedAt?: string;
 }
 
 export type SectionType = 

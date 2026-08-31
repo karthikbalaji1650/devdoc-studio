@@ -5,6 +5,7 @@ import { ShieldCheck, Calendar, User, Tag, FileText, CheckCircle2, Image, Upload
 interface MetadataEditorProps {
   metadata: DocumentMetadata;
   onChange: (updates: Partial<DocumentMetadata>) => void;
+  disabled?: boolean;
 }
 
 // Preset modern engineering logos (Base64 SVGs)
@@ -31,7 +32,7 @@ const LOGO_PRESETS = [
   }
 ];
 
-export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChange }) => {
+export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChange, disabled = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

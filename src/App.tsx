@@ -6,17 +6,27 @@ import { DocumentSidebar } from './components/DocumentSidebar';
 import { SectionEditorContainer } from './components/SectionEditorContainer';
 import { MetadataEditor } from './components/editors/MetadataEditor';
 import { DocumentPreview } from './components/DocumentPreview';
+import { AdminPanel } from './components/AdminPanel';
+import { LoginPage } from './components/LoginPage';
 import { parseDocxFile } from './exporters/docxImporter';
+import { useAuth } from './context/AuthContext';
+import { canEditDocument, canDeleteDocument } from './utils/permissions';
 import { saveAs } from 'file-saver';
 import { 
   PanelLeftClose, 
   PanelLeftOpen, 
-  CheckCircle 
+  CheckCircle,
+  LogOut,
+  User,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 
 const STORAGE_KEY = 'devdoc_studio_current_doc_v1';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user } = useAuth();
+
   // Load saved state or default
   const [document, setDocument] = useState<DocumentModel>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -35,6 +45,30 @@ export const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'split' | 'editor-only' | 'preview-only'>('split');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  // Initialize document with owner info on first load
+  useEffect(() => {
+    if (user && !document.metadata.ownerId) {
+      setDocument(prev => ({
+        ...prev,
+        metadata: {
+          ...prev.metadata,
+          ownerId: user.id,
+          ownerEmail: user.email,
+          createdAt: new Date().toISOString(),
+        }
+      }));
+    }
+  }, [user]);
+
+  // Check if current user has edit permission
+  useEffect(() => {
+    if (user) {
+      const canEdit = canEditDocument(user, document.metadata);
+      setIsReadOnly(!canEdit);
+    }
+  }, [user, document.metadata]);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -48,31 +82,69 @@ export const App: React.FC = () => {
 
   // Section manipulation handlers
   const handleUpdateMetadata = (updates: Partial<DocumentModel['metadata']>) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+    
     setDocument(prev => ({
       ...prev,
-      metadata: { ...prev.metadata, ...updates }
+      metadata: { 
+        ...prev.metadata, 
+        ...updates,
+        lastModifiedBy: user?.email || 'Unknown',
+        lastModifiedAt: new Date().toISOString(),
+      }
     }));
   };
 
   const handleUpdateSection = (id: string, updates: Partial<DocSection>) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => ({
       ...prev,
-      sections: prev.sections.map(s => (s.id === id ? { ...s, ...updates } : s))
+      sections: prev.sections.map(s => (s.id === id ? { ...s, ...updates } : s)),
+      metadata: {
+        ...prev.metadata,
+        lastModifiedBy: user?.email || 'Unknown',
+        lastModifiedAt: new Date().toISOString(),
+      }
     }));
   };
 
   const handleDeleteSection = (id: string) => {
+    if (isReadOnly) {
+      showToast('Cannot delete: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const newSections = prev.sections.filter(s => s.id !== id);
       if (activeSectionId === id) {
         setActiveSectionId(newSections.length > 0 ? newSections[0].id : 'metadata');
       }
-      return { ...prev, sections: newSections };
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
     });
     showToast('Section deleted');
   };
 
   const handleDuplicateSection = (id: string) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const index = prev.sections.findIndex(s => s.id === id);
       if (index === -1) return prev;
@@ -85,12 +157,25 @@ export const App: React.FC = () => {
       const newSections = [...prev.sections];
       newSections.splice(index + 1, 0, duplicated);
       setActiveSectionId(duplicated.id);
-      return { ...prev, sections: newSections };
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
     });
     showToast('Section duplicated');
   };
 
   const handleMoveSection = (id: string, direction: 'up' | 'down') => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const index = prev.sections.findIndex(s => s.id === id);
       if (index === -1) return prev;
@@ -101,7 +186,15 @@ export const App: React.FC = () => {
       const newSections = [...prev.sections];
       const [removed] = newSections.splice(index, 1);
       newSections.splice(targetIdx, 0, removed);
-      return { ...prev, sections: newSections };
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
     });
   };
 
@@ -222,6 +315,29 @@ export const App: React.FC = () => {
         onToggleViewMode={setViewMode}
       />
 
+      {/* Document Ownership & Permission Banner */}
+      <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-2.5 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Owner:</span>
+            <span className="font-semibold text-slate-200">{document.metadata.ownerEmail || 'Unknown'}</span>
+          </div>
+          {document.metadata.lastModifiedBy && document.metadata.lastModifiedBy !== document.metadata.ownerEmail && (
+            <div className="flex items-center gap-2 text-slate-500">
+              <span>Last modified by:</span>
+              <span className="text-slate-300">{document.metadata.lastModifiedBy}</span>
+            </div>
+          )}
+        </div>
+        
+        {isReadOnly && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <Lock className="w-4 h-4 text-amber-500" />
+            <span className="text-amber-300">Read-Only</span>
+          </div>
+        )}
+      </div>
+
       {/* App Workspace Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar: Document Outline & Section Navigator */}
@@ -294,6 +410,7 @@ export const App: React.FC = () => {
                   <MetadataEditor
                     metadata={document.metadata}
                     onChange={handleUpdateMetadata}
+                    disabled={isReadOnly}
                   />
                 ) : activeSection ? (
                   <SectionEditorContainer
@@ -328,6 +445,31 @@ export const App: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Admin Panel - shown at bottom for admin users */}
+      <AdminPanel />
     </div>
   );
 };
+
+export const App: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <p className="text-slate-300 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <AppContent />;

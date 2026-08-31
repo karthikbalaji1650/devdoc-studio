@@ -14,13 +14,16 @@ import {
   Layers,
   FileCode2,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  LogOut,
+  User
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { DocumentModel } from '../types/document';
 import { TEMPLATE_REGISTRY } from '../templates';
 import { exportToDocx } from '../exporters/docxExporter';
 import { copyToGoogleDocsClipboard } from '../exporters/googleDocsExporter';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderNavProps {
   document: DocumentModel;
@@ -378,7 +381,59 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             </>
           )}
         </div>
+
+        {/* User Profile & Logout Button */}
+        <UserProfileButton />
       </div>
     </header>
   );
 };
+
+const UserProfileButton: React.FC = () => {
+  const { user, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  if (!user) return null;
+
+  return (
+    <div className="relative group">
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60 transition-colors"
+      >
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+          <User className="w-3 h-3 text-white" />
+        </div>
+        <span className="hidden sm:inline">{user.username}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+      </button>
+
+      {isDropdownOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsDropdownOpen(false)} 
+          />
+          <div className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown z-50 p-2 animate-fade-in space-y-2">
+            <div className="px-3 py-2 border-b border-slate-700">
+              <p className="text-xs text-slate-400">Logged in as</p>
+              <p className="text-sm font-semibold text-white">{user.email}</p>
+              <p className="text-[11px] text-slate-400 mt-1 uppercase tracking-wide">
+                {user.role === 'admin' ? '👑 Administrator' : '👤 User'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                setIsDropdownOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors text-left text-red-400 hover:text-red-300"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
