@@ -67,6 +67,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem(AUTH_STORAGE_KEY);
   };
 
+  const getAllUsers = (): User[] => {
+    return Object.values(MOCK_USERS).map(record => record.user);
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -74,6 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     setUser,
+    getAllUsers,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

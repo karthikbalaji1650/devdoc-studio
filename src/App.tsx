@@ -6,6 +6,7 @@ import { DocumentSidebar } from './components/DocumentSidebar';
 import { SectionEditorContainer } from './components/SectionEditorContainer';
 import { MetadataEditor } from './components/editors/MetadataEditor';
 import { DocumentPreview } from './components/DocumentPreview';
+import { ReviewPanel } from './components/ReviewPanel';
 import { AdminPanel } from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import { parseDocxFile } from './exporters/docxImporter';
@@ -45,6 +46,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'split' | 'editor-only' | 'preview-only'>('split');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [showReviewPanel, setShowReviewPanel] = useState(false);
 
   // Initialize document with owner info on first load
   useEffect(() => {
@@ -285,6 +287,88 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Review Request Handlers
+  const handleRequestReview = (reviewerEmail: string) => {
+    const reviews = document.metadata.reviews || [];
+    const newReviewId = `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const newReview = {
+      id: newReviewId,
+      reviewerId: reviewerEmail.split('@')[0],
+      reviewerEmail,
+      status: 'PENDING' as const,
+      requestedAt: new Date().toISOString(),
+      requestedBy: user?.email || 'Unknown',
+    };
+
+    const updatedReviews = [...reviews, newReview];
+    const updatedDoc = {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        reviews: updatedReviews,
+        status: 'IN_REVIEW' as const,
+        lastModifiedAt: new Date().toISOString(),
+        lastModifiedBy: user?.email,
+      },
+    };
+
+    setDocument(updatedDoc);
+    showToast(`Review request sent to ${reviewerEmail}`);
+  };
+
+  const handleUpdateReview = (reviewId: string, status: 'APPROVED' | 'NEEDS_CHANGES' | 'REJECTED', comments: string) => {
+    const reviews = document.metadata.reviews || [];
+    const updatedReviews = reviews.map(review =>
+      review.id === reviewId
+        ? {
+            ...review,
+            status,
+            comments,
+            respondedAt: new Date().toISOString(),
+          }
+        : review
+    );
+
+    // Auto-update document status based on reviews
+    let newStatus = document.metadata.status;
+    const allReviews = updatedReviews;
+    
+    if (allReviews.length > 0) {
+      const pendingCount = allReviews.filter(r => r.status === 'PENDING').length;
+      const rejectedCount = allReviews.filter(r => r.status === 'REJECTED').length;
+      const needsChangesCount = allReviews.filter(r => r.status === 'NEEDS_CHANGES').length;
+      const approvedCount = allReviews.filter(r => r.status === 'APPROVED').length;
+
+      if (rejectedCount > 0) {
+        newStatus = 'DRAFT';
+      } else if (needsChangesCount > 0) {
+        newStatus = 'IN_REVIEW';
+      } else if (approvedCount > 0 && pendingCount === 0) {
+        newStatus = 'APPROVED';
+      }
+    }
+
+    const updatedDoc = {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        reviews: updatedReviews,
+        status: newStatus,
+        lastModifiedAt: new Date().toISOString(),
+        lastModifiedBy: user?.email,
+      },
+    };
+
+    setDocument(updatedDoc);
+    const statusMessage = status === 'APPROVED' 
+      ? `Review approved` 
+      : status === 'NEEDS_CHANGES' 
+      ? `Review submitted with requested changes` 
+      : `Review rejected`;
+    showToast(statusMessage);
+  };
+
   const activeSection = document.sections.find(s => s.id === activeSectionId);
   const activeSectionIndex = document.sections.findIndex(s => s.id === activeSectionId);
 
@@ -310,6 +394,7 @@ const AppContent: React.FC = () => {
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onReset={handleResetSampleData}
+        onShowReviewPanel={() => setShowReviewPanel(true)}
       />
 
       {/* Document Ownership & Permission Banner */}
@@ -439,6 +524,28 @@ const AppContent: React.FC = () => {
                 setActiveTab('split');
               }}
             />
+          )}
+
+          {/* Review Panel - Right Sidebar */}
+          {showReviewPanel && (
+            <div className="w-80 border-l border-slate-800 bg-slate-950/80 flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                <h3 className="text-sm font-semibold text-slate-200">Review Panel</h3>
+                <button
+                  onClick={() => setShowReviewPanel(false)}
+                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <ReviewPanel
+                document={document}
+                onRequestReview={handleRequestReview}
+                onUpdateReview={handleUpdateReview}
+              />
+            </div>
           )}
         </div>
       </div>

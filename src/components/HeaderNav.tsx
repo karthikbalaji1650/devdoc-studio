@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   LogOut,
-  User
+  User,
+  Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { DocumentModel } from '../types/document';
@@ -33,6 +34,7 @@ interface HeaderNavProps {
   onExportJson: () => void;
   onImportJson: (file: File) => void;
   onReset: () => void;
+  onShowReviewPanel: () => void;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -41,7 +43,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onUploadDocx,
   onExportJson,
   onImportJson,
-  onReset
+  onReset,
+  onShowReviewPanel
 }) => {
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
@@ -286,6 +289,16 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               <span className="hidden sm:inline">Copy for Google Docs</span>
             </>
           )}
+        </button>
+
+        {/* Request Review button */}
+        <button
+          onClick={onShowReviewPanel}
+          title="View and manage review requests"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-700/50 rounded-lg transition-all shadow-sm shadow-blue-950/50"
+        >
+          <Eye className="w-3.5 h-3.5 text-blue-400" />
+          <span className="hidden sm:inline">Reviews</span>
         </button>
 
         {/* Primary Export to Word .docx */}
