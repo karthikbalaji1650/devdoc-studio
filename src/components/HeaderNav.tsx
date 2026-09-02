@@ -33,8 +33,6 @@ interface HeaderNavProps {
   onExportJson: () => void;
   onImportJson: (file: File) => void;
   onReset: () => void;
-  viewMode: 'paginated' | 'continuous';
-  onToggleViewMode: (mode: 'paginated' | 'continuous') => void;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -43,9 +41,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onUploadDocx,
   onExportJson,
   onImportJson,
-  onReset,
-  viewMode,
-  onToggleViewMode
+  onReset
 }) => {
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
@@ -155,19 +151,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               <FileText className="w-5 h-5 text-blue-400" />
             </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                DocCraft Studio
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                Dev Edition
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Word & Docs Generator for Engineers
-            </p>
-          </div>
+          <span className="font-bold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+            DocCraft Studio
+          </span>
         </div>
 
         <div className="h-6 w-[1px] bg-slate-800 mx-1" />
@@ -253,29 +239,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         </div>
       </div>
 
-      {/* Center: View Mode Switcher */}
-      <div className="hidden md:flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-        <button
-          onClick={() => onToggleViewMode('paginated')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-            viewMode === 'paginated'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Page View (8.5x11)
-        </button>
-        <button
-          onClick={() => onToggleViewMode('continuous')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-            viewMode === 'continuous'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Continuous Flow
-        </button>
-      </div>
+
 
       {/* Right: Export & Action Buttons */}
       <div className="flex items-center gap-2">

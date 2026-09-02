@@ -41,7 +41,6 @@ const AppContent: React.FC = () => {
   });
 
   const [activeSectionId, setActiveSectionId] = useState<string | 'metadata'>('metadata');
-  const [viewMode, setViewMode] = useState<'paginated' | 'continuous'>('paginated');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'split' | 'editor-only' | 'preview-only'>('split');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -311,8 +310,6 @@ const AppContent: React.FC = () => {
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onReset={handleResetSampleData}
-        viewMode={viewMode}
-        onToggleViewMode={setViewMode}
       />
 
       {/* Document Ownership & Permission Banner */}
@@ -436,7 +433,7 @@ const AppContent: React.FC = () => {
           {showPreview && (
             <DocumentPreview
               document={document}
-              viewMode={viewMode}
+              viewMode="paginated"
               onSelectSection={(id) => {
                 setActiveSectionId(id);
                 setActiveTab('split');
