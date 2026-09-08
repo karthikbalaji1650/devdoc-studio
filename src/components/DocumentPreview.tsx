@@ -74,52 +74,30 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         >
           <div className={`doc-page ${viewMode === 'continuous' ? 'continuous' : ''}`}>
             {/* Header Area */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-6">
+            <div className="relative flex items-center justify-between pb-3 border-b border-slate-200 text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-6">
               <span>{metadata.docNumber ? `${metadata.docNumber} - ` : ''}{metadata.classification}</span>
+              {metadata.logoUrl && metadata.logoPosition === 'center' && (
+                <img
+                  src={metadata.logoUrl}
+                  alt="Logo"
+                  className="absolute left-1/2 top-0 h-8 max-w-[140px] -translate-x-1/2 -translate-y-1/4 object-contain"
+                />
+              )}
               <span>{metadata.department || 'Engineering Organization'}</span>
             </div>
 
             {/* Document Header with Optional Logo */}
             <div className="mb-6">
-              {metadata.logoUrl && metadata.logoPosition === 'right' ? (
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-blue-950 tracking-tight leading-tight">
-                      {metadata.title || 'Untitled Technical Document'}
-                    </h1>
-                    {metadata.subtitle && (
-                      <p className="text-sm font-medium text-slate-500 italic mt-1">
-                        {metadata.subtitle}
-                      </p>
-                    )}
-                  </div>
-                  <img
-                    src={metadata.logoUrl}
-                    alt="Logo"
-                    className="h-12 max-w-[160px] object-contain flex-shrink-0"
-                  />
-                </div>
-              ) : (
-                <>
-                  {metadata.logoUrl && (
-                    <div className="mb-3">
-                      <img
-                        src={metadata.logoUrl}
-                        alt="Logo"
-                        className="h-12 max-w-[180px] object-contain"
-                      />
-                    </div>
-                  )}
-                  <h1 className="text-2xl md:text-3xl font-extrabold text-blue-950 tracking-tight leading-tight">
-                    {metadata.title || 'Untitled Technical Document'}
-                  </h1>
-                  {metadata.subtitle && (
-                    <p className="text-sm font-medium text-slate-500 italic mt-1">
-                      {metadata.subtitle}
-                    </p>
-                  )}
-                </>
-              )}
+              <>
+                <h1 className="text-2xl md:text-3xl font-extrabold text-blue-950 tracking-tight leading-tight">
+                  {metadata.title || 'Untitled Technical Document'}
+                </h1>
+                {metadata.subtitle && (
+                  <p className="text-sm font-medium text-slate-500 italic mt-1">
+                    {metadata.subtitle}
+                  </p>
+                )}
+              </>
             </div>
 
             {/* Document Metadata Table */}

@@ -1,5 +1,5 @@
-import type { User } from './auth';
-import type { DocumentMetadata } from './document';
+import type { User } from '../types/auth';
+import type { DocumentMetadata } from '../types/document';
 
 export const canEditDocument = (user: User | null, docMetadata: DocumentMetadata): boolean => {
   if (!user) return false;

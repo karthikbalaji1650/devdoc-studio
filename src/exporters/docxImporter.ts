@@ -92,7 +92,10 @@ export async function parseDocxFile(file: File): Promise<DocumentModel> {
       classification: 'INTERNAL ONLY',
       status: 'DRAFT',
       templateType: 'custom',
-      tags: ['Imported', 'DOCX']
+      tags: ['Imported', 'DOCX'],
+      ownerId: '1',
+      ownerEmail: 'admin@doccraft.com',
+      createdAt: new Date().toISOString()
     },
     sections: sections.length > 0 ? sections : [
       {

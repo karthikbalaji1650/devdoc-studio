@@ -13,7 +13,10 @@ export const sampleADRDoc: DocumentModel = {
     classification: 'INTERNAL ONLY',
     status: 'APPROVED',
     templateType: 'adr',
-    tags: ['Architecture', 'ADR', 'WebSocket', 'Performance']
+    tags: ['Architecture', 'ADR', 'WebSocket', 'Performance'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: '2026-08-13T00:00:00.000Z'
   },
   sections: [
     {
@@ -78,7 +81,10 @@ export const sampleRCADoc: DocumentModel = {
     classification: 'INTERNAL ONLY',
     status: 'APPROVED',
     templateType: 'rca',
-    tags: ['Incident', 'RCA', 'Post-Mortem', 'Firmware']
+    tags: ['Incident', 'RCA', 'Post-Mortem', 'Firmware'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: '2026-08-13T00:00:00.000Z'
   },
   sections: [
     {

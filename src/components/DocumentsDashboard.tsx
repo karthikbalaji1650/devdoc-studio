@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { DocumentModel } from '../types/document';
-import { FileText, Lock, Plus, Share2, Trash2, Eye } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 
 interface UserDocument {
   id: string;

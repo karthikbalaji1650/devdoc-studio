@@ -13,7 +13,10 @@ export const sampleTestReportDoc: DocumentModel = {
     classification: 'INTERNAL ONLY',
     status: 'APPROVED',
     templateType: 'test-report',
-    tags: ['QA', 'Test Execution', 'Cybersecurity', 'Regression', 'Release-Gate']
+    tags: ['QA', 'Test Execution', 'Cybersecurity', 'Regression', 'Release-Gate'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: '2026-08-13T00:00:00.000Z'
   },
   sections: [
     {
@@ -159,7 +162,10 @@ export const blankTestReportDoc: DocumentModel = {
     classification: 'INTERNAL ONLY',
     status: 'DRAFT',
     templateType: 'test-report',
-    tags: ['QA', 'Test Report']
+    tags: ['QA', 'Test Report'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: new Date().toISOString()
   },
   sections: [
     {

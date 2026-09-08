@@ -14,8 +14,11 @@ export const sampleTechnicalAnalysisDoc: DocumentModel = {
     status: 'APPROVED',
     templateType: 'technical-analysis',
     logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none"><rect width="40" height="40" y="10" rx="8" fill="%232563EB"/><path d="M14 24h12v12H14z" fill="white"/><path d="M20 18v6m0 12v6m-6-12H8m24 0h-6" stroke="white" stroke-width="2" stroke-linecap="round"/><text x="50" y="38" fill="%231E3A8A" font-family="Arial" font-weight="bold" font-size="20">FIRMWARE</text></svg>',
-    logoPosition: 'left',
-    tags: ['BMC', 'Firmware', 'REST API', 'HPM Upgrade', 'Cybersecurity']
+    logoPosition: 'center',
+    tags: ['BMC', 'Firmware', 'REST API', 'HPM Upgrade', 'Cybersecurity'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: '2026-08-13T00:00:00.000Z'
   },
   sections: [
     {
@@ -257,7 +260,10 @@ export const blankTechnicalAnalysisDoc: DocumentModel = {
     classification: 'INTERNAL ONLY',
     status: 'DRAFT',
     templateType: 'technical-analysis',
-    tags: ['Architecture', 'Analysis', 'Bugfix']
+    tags: ['Architecture', 'Analysis', 'Bugfix'],
+    ownerId: '1',
+    ownerEmail: 'admin@doccraft.com',
+    createdAt: new Date().toISOString()
   },
   sections: [
     {

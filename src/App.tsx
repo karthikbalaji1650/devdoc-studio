@@ -11,16 +11,13 @@ import { AdminPanel } from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import { parseDocxFile } from './exporters/docxImporter';
 import { useAuth } from './context/AuthContext';
-import { canEditDocument, canDeleteDocument } from './utils/permissions';
+import { canEditDocument } from './utils/permissions';
 import { saveAs } from 'file-saver';
 import { 
   PanelLeftClose, 
   PanelLeftOpen, 
   CheckCircle,
-  LogOut,
-  User,
-  Lock,
-  AlertCircle
+  Lock
 } from 'lucide-react';
 
 const STORAGE_KEY = 'devdoc_studio_current_doc_v1';
@@ -33,7 +30,15 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const savedDocument = JSON.parse(saved) as DocumentModel;
+        return {
+          ...savedDocument,
+          metadata: {
+            ...savedDocument.metadata,
+            // Migrate the original sample's default logo alignment.
+            logoPosition: 'center'
+          }
+        };
       } catch (e) {
         console.error('Failed to parse saved document', e);
       }
