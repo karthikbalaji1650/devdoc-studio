@@ -7,6 +7,18 @@ export type TemplateType =
 
 export type DocClassification = 'CONFIDENTIAL' | 'INTERNAL ONLY' | 'PUBLIC';
 export type DocStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'PUBLISHED';
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'NEEDS_CHANGES' | 'REJECTED';
+
+export interface ReviewRequest {
+  id: string;
+  reviewerId: string;
+  reviewerEmail: string;
+  status: ReviewStatus;
+  requestedAt: string;
+  respondedAt?: string;
+  comments?: string;
+  requestedBy: string; // Email of who requested the review
+}
 
 export interface DocumentMetadata {
   id: string;
@@ -23,6 +35,14 @@ export interface DocumentMetadata {
   logoUrl?: string; // Base64 data URI or image URL
   logoPosition?: 'left' | 'right';
   tags?: string[];
+  // Ownership & Permissions
+  ownerId: string; // User ID of the owner
+  ownerEmail: string;
+  createdAt: string;
+  lastModifiedBy?: string;
+  lastModifiedAt?: string;
+  // Reviews
+  reviews?: ReviewRequest[];
 }
 
 export type SectionType = 

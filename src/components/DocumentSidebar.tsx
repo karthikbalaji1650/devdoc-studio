@@ -12,7 +12,8 @@ import {
   Search, 
   Hash, 
   ChevronRight, 
-  ListTree 
+  ListTree,
+  GripVertical
 } from 'lucide-react';
 
 interface DocumentSidebarProps {
@@ -20,16 +21,20 @@ interface DocumentSidebarProps {
   activeSectionId: string | 'metadata';
   onSelectSection: (id: string | 'metadata') => void;
   onAddSection: (level: 1 | 2 | 3, type: SectionType, title?: string) => void;
+  onReorderSections: (draggedId: string, targetId: string) => void;
 }
 
 export const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   sections,
   activeSectionId,
   onSelectSection,
-  onAddSection
+  onAddSection,
+  onReorderSections
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const filteredSections = sections.filter(s => 
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -103,13 +108,37 @@ export const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
             <button
               key={sec.id}
               type="button"
+              draggable
+              onDragStart={(event) => {
+                setDraggedSectionId(sec.id);
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', sec.id);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                if (draggedSectionId !== sec.id) setDropTargetId(sec.id);
+              }}
+              onDragLeave={() => setDropTargetId(null)}
+              onDrop={(event) => {
+                event.preventDefault();
+                const draggedId = event.dataTransfer.getData('text/plain') || draggedSectionId;
+                if (draggedId && draggedId !== sec.id) onReorderSections(draggedId, sec.id);
+                setDraggedSectionId(null);
+                setDropTargetId(null);
+              }}
+              onDragEnd={() => {
+                setDraggedSectionId(null);
+                setDropTargetId(null);
+              }}
               onClick={() => onSelectSection(sec.id)}
               className={`w-full flex items-center gap-2 py-1.5 px-2.5 rounded-lg text-xs text-left transition-all ${indent} ${
                 isActive
                   ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/30'
                   : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
-              }`}
+              } ${dropTargetId === sec.id ? 'border-t-2 border-blue-400' : ''} ${draggedSectionId === sec.id ? 'opacity-40' : ''}`}
             >
+              <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-slate-500 cursor-grab" />
               <span className={`text-[10px] font-mono opacity-60 ${isActive ? 'text-blue-200' : 'text-slate-500'}`}>
                 {sec.level === 1 ? 'H1' : sec.level === 2 ? 'H2' : 'H3'}
               </span>

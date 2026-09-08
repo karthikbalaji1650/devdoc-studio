@@ -6,17 +6,28 @@ import { DocumentSidebar } from './components/DocumentSidebar';
 import { SectionEditorContainer } from './components/SectionEditorContainer';
 import { MetadataEditor } from './components/editors/MetadataEditor';
 import { DocumentPreview } from './components/DocumentPreview';
+import { ReviewPanel } from './components/ReviewPanel';
+import { AdminPanel } from './components/AdminPanel';
+import { LoginPage } from './components/LoginPage';
 import { parseDocxFile } from './exporters/docxImporter';
+import { useAuth } from './context/AuthContext';
+import { canEditDocument, canDeleteDocument } from './utils/permissions';
 import { saveAs } from 'file-saver';
 import { 
   PanelLeftClose, 
   PanelLeftOpen, 
-  CheckCircle 
+  CheckCircle,
+  LogOut,
+  User,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 
 const STORAGE_KEY = 'devdoc_studio_current_doc_v1';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user } = useAuth();
+
   // Load saved state or default
   const [document, setDocument] = useState<DocumentModel>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -31,10 +42,34 @@ export const App: React.FC = () => {
   });
 
   const [activeSectionId, setActiveSectionId] = useState<string | 'metadata'>('metadata');
-  const [viewMode, setViewMode] = useState<'paginated' | 'continuous'>('paginated');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'split' | 'editor-only' | 'preview-only'>('split');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [showReviewPanel, setShowReviewPanel] = useState(false);
+
+  // Initialize document with owner info on first load
+  useEffect(() => {
+    if (user && !document.metadata.ownerId) {
+      setDocument(prev => ({
+        ...prev,
+        metadata: {
+          ...prev.metadata,
+          ownerId: user.id,
+          ownerEmail: user.email,
+          createdAt: new Date().toISOString(),
+        }
+      }));
+    }
+  }, [user]);
+
+  // Check if current user has edit permission
+  useEffect(() => {
+    if (user) {
+      const canEdit = canEditDocument(user, document.metadata);
+      setIsReadOnly(!canEdit);
+    }
+  }, [user, document.metadata]);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -48,31 +83,69 @@ export const App: React.FC = () => {
 
   // Section manipulation handlers
   const handleUpdateMetadata = (updates: Partial<DocumentModel['metadata']>) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+    
     setDocument(prev => ({
       ...prev,
-      metadata: { ...prev.metadata, ...updates }
+      metadata: { 
+        ...prev.metadata, 
+        ...updates,
+        lastModifiedBy: user?.email || 'Unknown',
+        lastModifiedAt: new Date().toISOString(),
+      }
     }));
   };
 
   const handleUpdateSection = (id: string, updates: Partial<DocSection>) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => ({
       ...prev,
-      sections: prev.sections.map(s => (s.id === id ? { ...s, ...updates } : s))
+      sections: prev.sections.map(s => (s.id === id ? { ...s, ...updates } : s)),
+      metadata: {
+        ...prev.metadata,
+        lastModifiedBy: user?.email || 'Unknown',
+        lastModifiedAt: new Date().toISOString(),
+      }
     }));
   };
 
   const handleDeleteSection = (id: string) => {
+    if (isReadOnly) {
+      showToast('Cannot delete: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const newSections = prev.sections.filter(s => s.id !== id);
       if (activeSectionId === id) {
         setActiveSectionId(newSections.length > 0 ? newSections[0].id : 'metadata');
       }
-      return { ...prev, sections: newSections };
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
     });
     showToast('Section deleted');
   };
 
   const handleDuplicateSection = (id: string) => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const index = prev.sections.findIndex(s => s.id === id);
       if (index === -1) return prev;
@@ -85,12 +158,25 @@ export const App: React.FC = () => {
       const newSections = [...prev.sections];
       newSections.splice(index + 1, 0, duplicated);
       setActiveSectionId(duplicated.id);
-      return { ...prev, sections: newSections };
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
     });
     showToast('Section duplicated');
   };
 
   const handleMoveSection = (id: string, direction: 'up' | 'down') => {
+    if (isReadOnly) {
+      showToast('Cannot edit: You do not have permission to modify this document');
+      return;
+    }
+
     setDocument(prev => {
       const index = prev.sections.findIndex(s => s.id === id);
       if (index === -1) return prev;
@@ -101,6 +187,27 @@ export const App: React.FC = () => {
       const newSections = [...prev.sections];
       const [removed] = newSections.splice(index, 1);
       newSections.splice(targetIdx, 0, removed);
+      return { 
+        ...prev, 
+        sections: newSections,
+        metadata: {
+          ...prev.metadata,
+          lastModifiedBy: user?.email || 'Unknown',
+          lastModifiedAt: new Date().toISOString(),
+        }
+      };
+    });
+  };
+
+  const handleReorderSections = (draggedId: string, targetId: string) => {
+    setDocument(prev => {
+      const draggedIndex = prev.sections.findIndex(section => section.id === draggedId);
+      const targetIndex = prev.sections.findIndex(section => section.id === targetId);
+      if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return prev;
+
+      const newSections = [...prev.sections];
+      const [draggedSection] = newSections.splice(draggedIndex, 1);
+      newSections.splice(targetIndex, 0, draggedSection);
       return { ...prev, sections: newSections };
     });
   };
@@ -180,6 +287,88 @@ export const App: React.FC = () => {
     }
   };
 
+  // Review Request Handlers
+  const handleRequestReview = (reviewerEmail: string) => {
+    const reviews = document.metadata.reviews || [];
+    const newReviewId = `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const newReview = {
+      id: newReviewId,
+      reviewerId: reviewerEmail.split('@')[0],
+      reviewerEmail,
+      status: 'PENDING' as const,
+      requestedAt: new Date().toISOString(),
+      requestedBy: user?.email || 'Unknown',
+    };
+
+    const updatedReviews = [...reviews, newReview];
+    const updatedDoc = {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        reviews: updatedReviews,
+        status: 'IN_REVIEW' as const,
+        lastModifiedAt: new Date().toISOString(),
+        lastModifiedBy: user?.email,
+      },
+    };
+
+    setDocument(updatedDoc);
+    showToast(`Review request sent to ${reviewerEmail}`);
+  };
+
+  const handleUpdateReview = (reviewId: string, status: 'APPROVED' | 'NEEDS_CHANGES' | 'REJECTED', comments: string) => {
+    const reviews = document.metadata.reviews || [];
+    const updatedReviews = reviews.map(review =>
+      review.id === reviewId
+        ? {
+            ...review,
+            status,
+            comments,
+            respondedAt: new Date().toISOString(),
+          }
+        : review
+    );
+
+    // Auto-update document status based on reviews
+    let newStatus = document.metadata.status;
+    const allReviews = updatedReviews;
+    
+    if (allReviews.length > 0) {
+      const pendingCount = allReviews.filter(r => r.status === 'PENDING').length;
+      const rejectedCount = allReviews.filter(r => r.status === 'REJECTED').length;
+      const needsChangesCount = allReviews.filter(r => r.status === 'NEEDS_CHANGES').length;
+      const approvedCount = allReviews.filter(r => r.status === 'APPROVED').length;
+
+      if (rejectedCount > 0) {
+        newStatus = 'DRAFT';
+      } else if (needsChangesCount > 0) {
+        newStatus = 'IN_REVIEW';
+      } else if (approvedCount > 0 && pendingCount === 0) {
+        newStatus = 'APPROVED';
+      }
+    }
+
+    const updatedDoc = {
+      ...document,
+      metadata: {
+        ...document.metadata,
+        reviews: updatedReviews,
+        status: newStatus,
+        lastModifiedAt: new Date().toISOString(),
+        lastModifiedBy: user?.email,
+      },
+    };
+
+    setDocument(updatedDoc);
+    const statusMessage = status === 'APPROVED' 
+      ? `Review approved` 
+      : status === 'NEEDS_CHANGES' 
+      ? `Review submitted with requested changes` 
+      : `Review rejected`;
+    showToast(statusMessage);
+  };
+
   const activeSection = document.sections.find(s => s.id === activeSectionId);
   const activeSectionIndex = document.sections.findIndex(s => s.id === activeSectionId);
 
@@ -205,9 +394,31 @@ export const App: React.FC = () => {
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onReset={handleResetSampleData}
-        viewMode={viewMode}
-        onToggleViewMode={setViewMode}
+        onShowReviewPanel={() => setShowReviewPanel(true)}
       />
+
+      {/* Document Ownership & Permission Banner */}
+      <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-2.5 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Owner:</span>
+            <span className="font-semibold text-slate-200">{document.metadata.ownerEmail || 'Unknown'}</span>
+          </div>
+          {document.metadata.lastModifiedBy && document.metadata.lastModifiedBy !== document.metadata.ownerEmail && (
+            <div className="flex items-center gap-2 text-slate-500">
+              <span>Last modified by:</span>
+              <span className="text-slate-300">{document.metadata.lastModifiedBy}</span>
+            </div>
+          )}
+        </div>
+        
+        {isReadOnly && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <Lock className="w-4 h-4 text-amber-500" />
+            <span className="text-amber-300">Read-Only</span>
+          </div>
+        )}
+      </div>
 
       {/* App Workspace Body */}
       <div className="flex-1 flex overflow-hidden">
@@ -218,6 +429,7 @@ export const App: React.FC = () => {
             activeSectionId={activeSectionId}
             onSelectSection={setActiveSectionId}
             onAddSection={handleAddSection}
+            onReorderSections={handleReorderSections}
           />
         )}
 
@@ -280,6 +492,7 @@ export const App: React.FC = () => {
                   <MetadataEditor
                     metadata={document.metadata}
                     onChange={handleUpdateMetadata}
+                    disabled={isReadOnly}
                   />
                 ) : activeSection ? (
                   <SectionEditorContainer
@@ -305,15 +518,63 @@ export const App: React.FC = () => {
           {showPreview && (
             <DocumentPreview
               document={document}
-              viewMode={viewMode}
+              viewMode="paginated"
               onSelectSection={(id) => {
                 setActiveSectionId(id);
                 setActiveTab('split');
               }}
             />
           )}
+
+          {/* Review Panel - Right Sidebar */}
+          {showReviewPanel && (
+            <div className="w-80 border-l border-slate-800 bg-slate-950/80 flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                <h3 className="text-sm font-semibold text-slate-200">Review Panel</h3>
+                <button
+                  onClick={() => setShowReviewPanel(false)}
+                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <ReviewPanel
+                document={document}
+                onRequestReview={handleRequestReview}
+                onUpdateReview={handleUpdateReview}
+              />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Admin Panel - shown at bottom for admin users */}
+      <AdminPanel />
     </div>
   );
+};
+
+export const App: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <p className="text-slate-300 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <AppContent />;
 };
