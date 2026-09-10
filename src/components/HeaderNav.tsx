@@ -52,6 +52,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const { user } = useAuth();
+  const pendingReviewCount = (document.metadata.reviews || []).filter(
+    review => review.reviewerEmail === user?.email && review.status === 'PENDING'
+  ).length;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -316,6 +320,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         >
           <Eye className="w-3.5 h-3.5 text-blue-400" />
           <span className="hidden sm:inline">Reviews</span>
+          {pendingReviewCount > 0 && (
+            <span
+              aria-label={`${pendingReviewCount} pending review assignment${pendingReviewCount === 1 ? '' : 's'}`}
+              className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] leading-4 text-white text-center shadow-sm shadow-red-950/70"
+            >
+              {pendingReviewCount}
+            </span>
+          )}
         </button>
 
         {/* Primary Export to Word .docx */}
