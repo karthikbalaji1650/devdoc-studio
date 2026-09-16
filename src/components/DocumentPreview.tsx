@@ -317,16 +317,33 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                             </div>
                           )}
 
-                          {tc.expectedResult && (
-                            <p className="text-slate-700">
-                              <strong className="text-slate-900">Expected Result:</strong> {tc.expectedResult}
-                            </p>
-                          )}
+                          <p className="text-slate-700">
+                            <strong className="text-slate-900">Expected Result:</strong>{' '}
+                            {tc.expectedResult || <span className="text-slate-400 italic">Not provided</span>}
+                          </p>
 
-                          {tc.actualResult && (
-                            <p className="text-emerald-800">
-                              <strong className="text-slate-900">Actual Result:</strong> {tc.actualResult}
-                            </p>
+                          <p className={tc.actualResult ? 'text-emerald-800' : 'text-slate-500'}>
+                            <strong className="text-slate-900">Actual Result:</strong>{' '}
+                            {tc.actualResult || <span className="italic">Not recorded</span>}
+                          </p>
+
+                          {tc.evidence && tc.evidence.length > 0 && (
+                            <div className="space-y-1.5 border-t border-slate-200 pt-2">
+                              <strong className="text-slate-900">Proof / Evidence:</strong>
+                              <div className="space-y-2">
+                                {tc.evidence.map((item) => (
+                                  <div key={item.id}>
+                                    {item.mimeType.startsWith('image/') ? (
+                                      <img src={item.dataUrl} alt={item.name} className="max-h-64 max-w-full rounded border border-slate-200 object-contain" />
+                                    ) : (
+                                      <a href={item.dataUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline">
+                                        Open {item.name}
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       ))}

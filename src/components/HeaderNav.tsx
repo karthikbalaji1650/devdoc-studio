@@ -56,6 +56,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const pendingReviewCount = (document.metadata.reviews || []).filter(
     review => review.reviewerEmail === user?.email && review.status === 'PENDING'
   ).length;
+  const templateName = TEMPLATE_REGISTRY.find(template => template.id === document.metadata.templateType)?.name
+    || document.metadata.templateType.replace('-', ' ');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -180,7 +182,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>
-              Template: <strong className="text-white">{document.metadata.templateType.replace('-', ' ').toUpperCase()}</strong>
+              Template: <strong className="text-white">{templateName.toUpperCase()}</strong>
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>

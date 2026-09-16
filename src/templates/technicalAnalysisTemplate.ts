@@ -250,7 +250,7 @@ export const sampleTechnicalAnalysisDoc: DocumentModel = {
 export const blankTechnicalAnalysisDoc: DocumentModel = {
   metadata: {
     id: 'tech-analysis-blank',
-    title: 'Technical Analysis Document',
+    title: 'Test Analysis Document',
     subtitle: 'System Investigation, Root Cause Analysis & Solution Architecture',
     docNumber: 'TECH-2026-001',
     author: 'Author Name',
