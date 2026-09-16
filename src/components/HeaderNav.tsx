@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Layers,
   FileCode2,
+  Table2,
   CheckCircle2,
   AlertTriangle,
   LogOut,
@@ -24,6 +25,7 @@ import type { DocumentModel } from '../types/document';
 import { TEMPLATE_REGISTRY } from '../templates';
 import { exportToDocx } from '../exporters/docxExporter';
 import { copyToGoogleDocsClipboard } from '../exporters/googleDocsExporter';
+import { exportToGoogleSheets } from '../exporters/googleSheetsExporter';
 import { useAuth } from '../context/AuthContext';
 
 interface HeaderNavProps {
@@ -50,6 +52,12 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const { user } = useAuth();
+  const pendingReviewCount = (document.metadata.reviews || []).filter(
+    review => review.reviewerEmail === user?.email && review.status === 'PENDING'
+  ).length;
+  const templateName = TEMPLATE_REGISTRY.find(template => template.id === document.metadata.templateType)?.name
+    || document.metadata.templateType.replace('-', ' ');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +131,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     }
   };
 
+  const handleGoogleSheetsExport = () => {
+    exportToGoogleSheets(document);
+    setExportDropdownOpen(false);
+  };
+
   const handlePrint = () => {
     window.print();
     setExportDropdownOpen(false);
@@ -169,7 +182,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>
-              Template: <strong className="text-white">{document.metadata.templateType.replace('-', ' ').toUpperCase()}</strong>
+              Template: <strong className="text-white">{templateName.toUpperCase()}</strong>
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
@@ -291,6 +304,16 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           )}
         </button>
 
+        {/* Export Google Sheets-compatible CSV */}
+        <button
+          onClick={handleGoogleSheetsExport}
+          title="Download document data as a CSV file that opens in Google Sheets"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-700/50 rounded-lg transition-all shadow-sm shadow-emerald-950/50"
+        >
+          <Table2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden sm:inline">Google Sheets</span>
+        </button>
+
         {/* Request Review button */}
         <button
           onClick={onShowReviewPanel}
@@ -299,6 +322,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         >
           <Eye className="w-3.5 h-3.5 text-blue-400" />
           <span className="hidden sm:inline">Reviews</span>
+          {pendingReviewCount > 0 && (
+            <span
+              aria-label={`${pendingReviewCount} pending review assignment${pendingReviewCount === 1 ? '' : 's'}`}
+              className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] leading-4 text-white text-center shadow-sm shadow-red-950/70"
+            >
+              {pendingReviewCount}
+            </span>
+          )}
         </button>
 
         {/* Primary Export to Word .docx */}
@@ -333,6 +364,14 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 >
                   <Printer className="w-4 h-4 text-slate-400" />
                   <span>Print / Save as PDF</span>
+                </button>
+                <button
+                  onClick={handleGoogleSheetsExport}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors text-left"
+                  title="Download document data as a CSV file that opens in Google Sheets"
+                >
+                  <Table2 className="w-4 h-4 text-emerald-400" />
+                  <span>Export to Google Sheets (CSV)</span>
                 </button>
                 <button
                   onClick={() => {

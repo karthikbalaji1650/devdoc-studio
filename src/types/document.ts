@@ -33,7 +33,7 @@ export interface DocumentMetadata {
   status: DocStatus;
   templateType: TemplateType;
   logoUrl?: string; // Base64 data URI or image URL
-  logoPosition?: 'left' | 'right';
+  logoPosition?: 'center';
   tags?: string[];
   // Ownership & Permissions
   ownerId: string; // User ID of the owner
@@ -82,7 +82,15 @@ export interface TestCaseItem {
   expectedResult: string;
   status: 'PASSED' | 'FAILED' | 'BLOCKED' | 'PENDING';
   actualResult?: string;
+  evidence?: EvidenceAttachment[];
   notes?: string;
+}
+
+export interface EvidenceAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  dataUrl: string;
 }
 
 export interface VerificationMatrixItem {

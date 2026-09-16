@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TestCaseItem } from '../../types/document';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Clipboard } from 'lucide-react';
 
 interface TestCasesEditorProps {
   testCases?: TestCaseItem[];
@@ -50,6 +50,38 @@ export const TestCasesEditor: React.FC<TestCasesEditorProps> = ({
     const tc = testCases[tcIndex];
     const newSteps = tc.steps.filter((_, i) => i !== stepIndex);
     updateTestCase(tcIndex, { steps: newSteps });
+  };
+
+  const addEvidence = (tcIndex: number, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (!dataUrl) return;
+      const evidence = {
+        id: `evidence-${Date.now()}`,
+        name: file.name || 'Pasted screenshot',
+        mimeType: file.type || 'image/png',
+        dataUrl
+      };
+      const currentEvidence = testCases[tcIndex].evidence || [];
+      updateTestCase(tcIndex, { evidence: [...currentEvidence, evidence] });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEvidencePaste = (tcIndex: number, event: React.ClipboardEvent<HTMLDivElement>) => {
+    const image = Array.from(event.clipboardData.items)
+      .find(item => item.type.startsWith('image/'))
+      ?.getAsFile();
+    if (image) {
+      event.preventDefault();
+      addEvidence(tcIndex, image);
+    }
+  };
+
+  const removeEvidence = (tcIndex: number, evidenceId: string) => {
+    const evidence = (testCases[tcIndex].evidence || []).filter(item => item.id !== evidenceId);
+    updateTestCase(tcIndex, { evidence });
   };
 
   return (
@@ -197,6 +229,48 @@ export const TestCasesEditor: React.FC<TestCasesEditorProps> = ({
                   className="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-y"
                 />
               </div>
+            </div>
+
+            {/* Evidence */}
+            <div
+              onPaste={(event) => handleEvidencePaste(tcIdx, event)}
+              tabIndex={0}
+              aria-label="Paste screenshot evidence here"
+              className="space-y-2 rounded-lg border border-dashed border-slate-700/80 bg-slate-950/50 p-2.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-semibold text-slate-400">Proof / Evidence</label>
+                <label className="flex cursor-pointer items-center gap-1 text-[10px] font-medium text-blue-400 hover:text-blue-300">
+                  <Upload className="h-3 w-3" />
+                  Add image or PDF
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,application/pdf"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) addEvidence(tcIdx, file);
+                      event.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                <Clipboard className="h-3 w-3" />
+                Click here and paste a screenshot, or attach a JPG, PNG, or PDF.
+              </div>
+              {(tc.evidence || []).length > 0 && (
+                <div className="space-y-1">
+                  {(tc.evidence || []).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-2 rounded bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
+                      <span className="truncate">{item.name}</span>
+                      <button type="button" onClick={() => removeEvidence(tcIdx, item.id)} className="text-slate-500 hover:text-rose-400" aria-label={`Remove ${item.name}`}>
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}

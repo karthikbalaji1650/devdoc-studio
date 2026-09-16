@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import type { DocumentMetadata, DocClassification, DocStatus } from '../../types/document';
-import { ShieldCheck, Calendar, User, Tag, FileText, CheckCircle2, Image, Upload, Trash2, Sparkles, AlignLeft, AlignRight } from 'lucide-react';
+import { ShieldCheck, Calendar, User, Tag, FileText, CheckCircle2, Image, Upload, Trash2, Sparkles } from 'lucide-react';
 
 interface MetadataEditorProps {
   metadata: DocumentMetadata;
@@ -35,13 +35,18 @@ const LOGO_PRESETS = [
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChange, disabled = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleFieldChange = <K extends keyof DocumentMetadata>(field: K, value: DocumentMetadata[K]) => {
+    if (disabled) return;
+    onChange({ [field]: value } as Partial<DocumentMetadata>);
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
-        onChange({ logoUrl: result });
+        onChange({ logoUrl: result, logoPosition: 'center' });
       };
       reader.readAsDataURL(file);
     }
@@ -66,29 +71,6 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChan
           </div>
           {metadata.logoUrl && (
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => onChange({ logoPosition: 'left' })}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded ${
-                    metadata.logoPosition !== 'right' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <AlignLeft className="w-3 h-3" />
-                  <span>Left</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onChange({ logoPosition: 'right' })}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded ${
-                    metadata.logoPosition === 'right' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <AlignRight className="w-3 h-3" />
-                  <span>Right</span>
-                </button>
-              </div>
-
               <button
                 type="button"
                 onClick={() => onChange({ logoUrl: undefined })}
@@ -165,9 +147,10 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChan
           <input
             type="text"
             value={metadata.title}
-            onChange={(e) => onChange({ title: e.target.value })}
+            onChange={(e) => handleFieldChange('title', e.target.value)}
             placeholder="e.g. WebUI HPM Firmware Upgrade Failure Investigation"
-            className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+            disabled={disabled}
+            className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -177,9 +160,10 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({ metadata, onChan
           <input
             type="text"
             value={metadata.subtitle || ''}
-            onChange={(e) => onChange({ subtitle: e.target.value })}
+            onChange={(e) => handleFieldChange('subtitle', e.target.value)}
             placeholder="e.g. Root Cause Investigation, Code Fixes & Verification Matrix"
-            className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+            disabled={disabled}
+            className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 

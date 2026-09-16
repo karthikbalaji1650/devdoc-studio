@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
   const { user, logout } = useAuth();

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, CheckCircle2, AlertCircle, Clock, X, ChevronDown } from 'lucide-react';
-import type { ReviewRequest, DocumentModel } from '../types/document';
+import type { DocumentModel } from '../types/document';
 import type { User } from '../types/auth';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,7 +16,6 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
   onUpdateReview
 }) => {
   const { user, getAllUsers } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedReviewer, setSelectedReviewer] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,12 +24,13 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
   const reviews = document.metadata.reviews || [];
   const currentUser = user;
 
-  // Get available reviewers (all users except the owner)
+  // Get available reviewers (all users except the owner). Allow additional review requests
+  // even after earlier ones are sent so the owner can request more feedback as needed.
   const availableReviewers = allUsers.filter(u => u.email !== document.metadata.ownerEmail);
-
-  // Get already requested reviewers
-  const requestedReviewerEmails = reviews.map(r => r.reviewerEmail);
-  const pendingReviewers = availableReviewers.filter(u => !requestedReviewerEmails.includes(u.email));
+  const reviewStatusByEmail = reviews.reduce<Record<string, string>>((acc, review) => {
+    acc[review.reviewerEmail] = review.status;
+    return acc;
+  }, {});
 
   const handleRequestReview = () => {
     if (selectedReviewer) {
@@ -99,8 +99,10 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
         {isOwner && (
           <div className="p-4 border-b border-slate-800">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-300">Request a Reviewer</label>
-              
+              <label className="text-xs font-medium text-slate-300">
+                {reviews.length > 0 ? 'Request another reviewer' : 'Request a reviewer'}
+              </label>
+
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -114,23 +116,40 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setDropdownOpen(false)} />
                     <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg z-40 max-h-48 overflow-y-auto">
-                      {pendingReviewers.length > 0 ? (
-                        pendingReviewers.map((reviewer) => (
-                          <button
-                            key={reviewer.id}
-                            onClick={() => {
-                              setSelectedReviewer(reviewer);
-                              setDropdownOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-xs text-left text-slate-300 hover:bg-slate-700 border-b border-slate-700/50 last:border-0"
-                          >
-                            {reviewer.email}
-                            <span className="text-slate-500 block text-[10px] mt-0.5">@{reviewer.username}</span>
-                          </button>
-                        ))
+                      {availableReviewers.length > 0 ? (
+                        availableReviewers.map((reviewer) => {
+                          const reviewerStatus = reviewStatusByEmail[reviewer.email];
+
+                          return (
+                            <button
+                              key={reviewer.id}
+                              onClick={() => {
+                                setSelectedReviewer(reviewer);
+                                setDropdownOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-xs text-left text-slate-300 hover:bg-slate-700 border-b border-slate-700/50 last:border-0"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div>
+                                  <span>{reviewer.email}</span>
+                                  <span className="text-slate-500 block text-[10px] mt-0.5">@{reviewer.username}</span>
+                                </div>
+                                {reviewerStatus ? (
+                                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${getReviewStatusBgColor(reviewerStatus)} ${getReviewStatusColor(reviewerStatus)}`}>
+                                    {reviewerStatus}
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
+                                    Ready
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })
                       ) : (
                         <div className="px-3 py-2 text-xs text-slate-500">
-                          All available users already have review requests
+                          No other users are available for review
                         </div>
                       )}
                     </div>
@@ -144,7 +163,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
                 className="w-full px-3 py-2 text-xs font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3 h-3" />
-                Send Request
+                {reviews.length > 0 ? 'Request Another Review' : 'Send Request'}
               </button>
             </div>
           </div>
@@ -186,7 +205,6 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
                 {/* Allow reviewer to update their review */}
                 {currentUser?.email === review.reviewerEmail && review.status === 'PENDING' && (
                   <ReviewResponseForm
-                    reviewId={review.id}
                     onSubmit={(status, comments) => onUpdateReview(review.id, status, comments)}
                   />
                 )}
@@ -209,11 +227,10 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
 };
 
 interface ReviewResponseFormProps {
-  reviewId: string;
   onSubmit: (status: 'APPROVED' | 'NEEDS_CHANGES' | 'REJECTED', comments: string) => void;
 }
 
-const ReviewResponseForm: React.FC<ReviewResponseFormProps> = ({ reviewId, onSubmit }) => {
+const ReviewResponseForm: React.FC<ReviewResponseFormProps> = ({ onSubmit }) => {
   const [status, setStatus] = useState<'APPROVED' | 'NEEDS_CHANGES' | 'REJECTED'>('APPROVED');
   const [comments, setComments] = useState('');
 

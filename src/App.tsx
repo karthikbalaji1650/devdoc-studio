@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { DocumentModel, DocSection, SectionType } from './types/document';
 import { TEMPLATE_REGISTRY, getDefaultDocument } from './templates';
+import { sampleTestReportDoc } from './templates/testReportTemplate';
 import { HeaderNav } from './components/HeaderNav';
 import { DocumentSidebar } from './components/DocumentSidebar';
 import { SectionEditorContainer } from './components/SectionEditorContainer';
@@ -11,19 +12,30 @@ import { AdminPanel } from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import { parseDocxFile } from './exporters/docxImporter';
 import { useAuth } from './context/AuthContext';
-import { canEditDocument, canDeleteDocument } from './utils/permissions';
+import { canEditDocument } from './utils/permissions';
 import { saveAs } from 'file-saver';
 import { 
   PanelLeftClose, 
   PanelLeftOpen, 
   CheckCircle,
-  LogOut,
-  User,
-  Lock,
-  AlertCircle
+  Lock
 } from 'lucide-react';
 
 const STORAGE_KEY = 'devdoc_studio_current_doc_v1';
+
+const migrateSavedDocument = (savedDocument: DocumentModel): DocumentModel => {
+  const isLegacyImpactAnalysis = savedDocument.metadata.templateType === 'test-report' && (
+    savedDocument.metadata.title === 'Firmware Security & REST API Test Execution Report' ||
+    savedDocument.sections.some(section => section.id === 'sec-exec-summary') ||
+    !savedDocument.sections.some(section => section.id === 'sec-purpose-scope')
+  );
+
+  if (isLegacyImpactAnalysis) {
+    return JSON.parse(JSON.stringify(sampleTestReportDoc));
+  }
+
+  return savedDocument;
+};
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
@@ -33,7 +45,15 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const savedDocument = migrateSavedDocument(JSON.parse(saved) as DocumentModel);
+        return {
+          ...savedDocument,
+          metadata: {
+            ...savedDocument.metadata,
+            // Migrate the original sample's default logo alignment.
+            logoPosition: 'center'
+          }
+        };
       } catch (e) {
         console.error('Failed to parse saved document', e);
       }

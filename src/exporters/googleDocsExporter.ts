@@ -6,7 +6,7 @@ export function generateGoogleDocsHtml(docModel: DocumentModel): string {
 
   let logoHtml = '';
   if (metadata.logoUrl) {
-    const align = metadata.logoPosition === 'right' ? 'text-align: right;' : 'text-align: left;';
+    const align = 'text-align: center;';
     logoHtml = `
       <div style="${align} margin-bottom: 16px;">
         <img src="${metadata.logoUrl}" alt="Logo" style="height: 48px; max-width: 180px; object-fit: contain;" />

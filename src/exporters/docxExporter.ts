@@ -43,7 +43,7 @@ export async function generateDocxBlob(docModel: DocumentModel): Promise<Blob> {
         if (imageType === 'svg') {
           children.push(
             new Paragraph({
-              alignment: metadata.logoPosition === 'right' ? AlignmentType.RIGHT : AlignmentType.LEFT,
+              alignment: AlignmentType.CENTER,
               spacing: { before: 0, after: 120 },
               children: [
                 new ImageRun({
@@ -64,7 +64,7 @@ export async function generateDocxBlob(docModel: DocumentModel): Promise<Blob> {
         } else {
           children.push(
             new Paragraph({
-              alignment: metadata.logoPosition === 'right' ? AlignmentType.RIGHT : AlignmentType.LEFT,
+              alignment: AlignmentType.CENTER,
               spacing: { before: 0, after: 120 },
               children: [
                 new ImageRun({
